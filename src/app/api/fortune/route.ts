@@ -3,8 +3,10 @@ import { calculateZiwuChart, calculateBaziChart, calculateLifePath, calculateZod
 import { lunarToSolar, solarToLunar } from '@/lib/lunar';
 import { nanoid } from 'nanoid';
 
-// In-memory store (per-instance, reset on cold start)
-const reportStore = new Map<string, any>();
+// In-memory store retained for runtime lookups (sharedId → report data)
+// Full report data is persisted by client in localStorage; this cache only
+// survives within a warm serverless instance.
+const reportCache = new Map<string, any>();
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,10 +40,10 @@ export async function POST(request: NextRequest) {
       sharedId: nanoid(10),
     };
 
-    reportStore.set(report.id, report);
-    reportStore.set(report.sharedId, report);
+    reportCache.set(report.id, report);
+    reportCache.set(report.sharedId, report);
 
-    return NextResponse.json({ success: true, reportId: report.id, sharedId: report.sharedId });
+    return NextResponse.json({ success: true, reportId: report.id, sharedId: report.sharedId, birthInfo: report.birthInfo });
   } catch (error) {
     console.error('Fortune generation error:', error);
     return NextResponse.json({ error: '生成失敗' }, { status: 500 });
@@ -54,18 +56,19 @@ export async function GET(request: NextRequest) {
   const sharedId = searchParams.get('sharedId');
 
   if (reportId) {
-    const report = reportStore.get(reportId);
+    const report = reportCache.get(reportId);
     if (!report) {
-      // Try to regenerate from query params
+      // Warm instance cache miss → client must read from localStorage
       return NextResponse.json({ error: '報告已過期，請重新生成' }, { status: 404 });
     }
     return NextResponse.json(report);
   }
 
   if (sharedId) {
-    const report = reportStore.get(sharedId);
+    const report = reportCache.get(sharedId);
     if (!report) {
-      return NextResponse.json({ error: '分享的報告已過期' }, { status: 404 });
+      // Warm instance cache miss → client must read from localStorage
+      return NextResponse.json({ error: '分享的報告已過期，請重新生成' }, { status: 404 });
     }
     return NextResponse.json(report);
   }
