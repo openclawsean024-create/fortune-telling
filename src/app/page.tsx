@@ -34,6 +34,15 @@ export default function Home() {
       const result = await response.json();
       const reportResponse = await fetch(`/api/fortune?id=${result.reportId}`);
       const reportData = await reportResponse.json();
+
+      // 保存報告 ID 到 localStorage
+      if (reportData.id) {
+        const existing = JSON.parse(localStorage.getItem('fortune_reports') || '[]');
+        if (!existing.includes(reportData.id)) {
+          localStorage.setItem('fortune_reports', JSON.stringify([reportData.id, ...existing]));
+        }
+      }
+
       setReport(reportData);
     } catch (error) {
       console.error('Error:', error);
@@ -99,6 +108,12 @@ export default function Home() {
               </p>
             </div>
             <div className="flex gap-3">
+              <button
+                onClick={() => window.location.href = '/my-reports'}
+                className="py-2 px-4 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-all"
+              >
+                📋 我的報告
+              </button>
               <button
                 onClick={handleShare}
                 className="py-2 px-4 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 transition-all"
