@@ -77,11 +77,10 @@ export default function Home() {
 
   const handleShare = async () => {
     if (!report) return;
-    // 將完整報告以 lz-string 壓縮後存入 URL 參數，跨瀏覽器可用，不受 server cold start 影響
     const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(report));
     const shareUrl = `${window.location.origin}/report?data=${compressed}`;
-    await navigator.clipboard.writeText(shareUrl);
-    window.location.href = `/report?data=${compressed}`;
+    try { await navigator.clipboard.writeText(shareUrl); } catch {}
+    window.location.href = shareUrl;
   };
 
   if (!report) {

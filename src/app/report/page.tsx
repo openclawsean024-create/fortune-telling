@@ -20,34 +20,27 @@ function ReportContent() {
   const [activeTab, setActiveTab] = useState<Tab>('ziwu');
 
   useEffect(() => {
-    let loaded = false;
-
-    // Priority 1: ?data= — lz-string URL-encoded full report (cross-browser, cold-start safe)
     if (dataParam) {
       try {
         const decompressed = LZString.decompressFromEncodedURIComponent(dataParam);
-        if (decompressed) {
+        if (decompressed && decompressed.length > 0) {
           const parsed = JSON.parse(decompressed) as FortuneReport;
           setReport(parsed);
-          loaded = true;
+          setLoading(false);
+          return;
         }
-      } catch {
-        // invalid data — try next source
-      }
+      } catch { /* fall through */ }
     }
-    // Priority 2: ?sharedId= — localStorage (same browser that generated report)
-    if (!loaded && sharedId) {
+    if (sharedId) {
       const stored = localStorage.getItem(`fortune_report_${sharedId}`);
       if (stored) {
         try {
           setReport(JSON.parse(stored));
-          loaded = true;
-        } catch {
-          // invalid
-        }
+          setLoading(false);
+          return;
+        } catch { /* fall through */ }
       }
     }
-
     setLoading(false);
   }, [dataParam, sharedId]);
 
