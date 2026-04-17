@@ -35,8 +35,10 @@ export default function Home() {
       const reportResponse = await fetch(`/api/fortune?id=${result.reportId}`);
       const reportData = await reportResponse.json();
 
-      // 保存報告 ID 到 localStorage
-      if (reportData.id) {
+      // 保存報告到 localStorage（sharedId 持久化，解決 serverless cold start 問題）
+      if (reportData.sharedId) {
+        localStorage.setItem(`fortune_report_${reportData.sharedId}`, JSON.stringify(reportData));
+        localStorage.setItem(`fortune_report_${reportData.id}`, JSON.stringify(reportData));
         const existing = JSON.parse(localStorage.getItem('fortune_reports') || '[]');
         if (!existing.includes(reportData.id)) {
           localStorage.setItem('fortune_reports', JSON.stringify([reportData.id, ...existing]));

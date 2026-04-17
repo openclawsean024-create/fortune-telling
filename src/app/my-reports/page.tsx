@@ -48,7 +48,7 @@ export default function MyReportsPage() {
     }
     setUserEmail(email);
 
-    // 從 localStorage 讀取報告 ID 列表，再逐一抓取報告詳情
+    // 從 localStorage 讀取報告（持久化存儲）
     const reportIds = getLocalReports();
     const loaded: Report[] = [];
     let completed = 0;
@@ -58,12 +58,29 @@ export default function MyReportsPage() {
       return;
     }
 
-    reportIds.forEach((id, idx) => {
+    reportIds.forEach((id) => {
+      // 優先從 localStorage 讀取
+      const stored = localStorage.getItem(`fortune_report_${id}`);
+      if (stored) {
+        try {
+          loaded.push(JSON.parse(stored));
+        } catch {}
+        completed++;
+        if (completed === reportIds.length) {
+          setReports(loaded.filter(Boolean));
+          setLoading(false);
+        }
+        return;
+      }
+
       fetch(`/api/fortune?id=${id}`)
         .then(res => res.json())
         .then(data => {
           if (!data.error) {
-            loaded[idx] = data;
+            loaded.push(data);
+            // 回寫 localStorage
+            localStorage.setItem(`fortune_report_${data.sharedId}`, JSON.stringify(data));
+            localStorage.setItem(`fortune_report_${data.id}`, JSON.stringify(data));
           }
         })
         .catch(() => {})

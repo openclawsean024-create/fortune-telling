@@ -18,15 +18,35 @@ function ReportContent() {
   const [activeTab, setActiveTab] = useState<Tab>('ziwu');
 
   useEffect(() => {
-    if (sharedId) {
-      fetch(`/api/fortune?sharedId=${sharedId}`)
-        .then(res => res.json())
-        .then(data => {
-          setReport(data);
-          setLoading(false);
-        })
-        .catch(() => setLoading(false));
+    if (!sharedId) {
+      setLoading(false);
+      return;
     }
+
+    // 優先從 localStorage 讀取（持久化，解決 serverless cold start 問題）
+    const stored = localStorage.getItem(`fortune_report_${sharedId}`);
+    if (stored) {
+      try {
+        setReport(JSON.parse(stored));
+        setLoading(false);
+        return;
+      } catch {
+        // fall through to API
+      }
+    }
+
+    // fallback: 嘗試從 API 讀取
+    fetch(`/api/fortune?sharedId=${sharedId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (!data.error) {
+          setReport(data);
+          // 同步寫入 localStorage
+          localStorage.setItem(`fortune_report_${sharedId}`, JSON.stringify(data));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, [sharedId]);
 
   if (loading) {
@@ -37,7 +57,7 @@ function ReportContent() {
 
   if (!report) {
     return (
-      <div className="text-xl text-red-500">找不到報告</div>
+      <div className="text-xl text-red-500">找不到報告，請重新生成</div>
     );
   }
 
