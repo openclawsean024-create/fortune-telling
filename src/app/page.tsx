@@ -84,23 +84,14 @@ export default function Home() {
     }
   };
 
-  // UTF-8 safe base64 encode（跨瀏覽器處理中文/特殊字元）
-  const encodeData = (str: string): string => {
-    const encoder = new TextEncoder();
-    const bytes = encoder.encode(str);
-    let binary = '';
-    bytes.forEach(b => binary += String.fromCharCode(b));
-    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  };
-
   const handleShare = async () => {
     if (!report) {
       alert('報告尚未生成，請稍後再試');
       return;
     }
     try {
-      const base64 = encodeData(JSON.stringify(report));
-      const shareUrl = `${window.location.origin}/report?data=${base64}`;
+      // 使用 encodeURIComponent（可靠、簡單，無需 base64 binary string）
+      const shareUrl = `${window.location.origin}/report?data=${encodeURIComponent(JSON.stringify(report))}`;
       await navigator.clipboard.writeText(shareUrl);
       alert('分享連結已複製到剪貼簿！');
     } catch (e) {

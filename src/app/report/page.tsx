@@ -22,16 +22,10 @@ function ReportContent() {
   useEffect(() => {
     let found = false;
 
-    // 優先讀取 ?data=<base64>（cold-start 可靠，data 內嵌 URL）
+    // 優先讀取 ?data=<encodeURIComponent>（cold-start 可靠，data 內嵌 URL）
     if (dataParam) {
       try {
-        const binary = atob(dataParam.replace(/-/g, '+').replace(/_/g, '/'));
-        const bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) {
-          bytes[i] = binary.charCodeAt(i);
-        }
-        const decoder = new TextDecoder('utf-8');
-        const jsonStr = decoder.decode(bytes);
+        const jsonStr = decodeURIComponent(dataParam);
         const parsed = JSON.parse(jsonStr) as FortuneReport;
         setReport(parsed);
         found = true;
