@@ -10,6 +10,28 @@ import ZodiacDisplay from '@/components/ZodiacDisplay';
 import PDFExport from '@/components/PDFExport';
 import { FortuneReport, BirthInfo, TarotCard } from '@/types';
 
+// Unicode-safe base64url encode（使用 TextEncoder，支援中文/亞洲字符）
+const base64UrlEncode = (str: string): string => {
+  const encoder = new TextEncoder();
+  const bytes = encoder.encode(str);
+  let binary = '';
+  bytes.forEach(b => binary += String.fromCharCode(b));
+  const base64 = btoa(binary);
+  return base64.replace(/\+/g, '-').replace(/\//g, '_');
+};
+
+// Unicode-safe base64url decode（使用 TextDecoder，支援中文/亞洲字符）
+const base64UrlDecode = (str: string): string => {
+  const base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  const decoder = new TextDecoder('utf-8');
+  return decoder.decode(bytes);
+};
+
 type Tab = 'ziwu' | 'bazi' | 'tarot' | 'lifepath' | 'zodiac';
 
 export default function Home() {
@@ -93,10 +115,8 @@ export default function Home() {
       alert('報告尚未生成，請稍後再試');
       return;
     }
-    // base64url 編碼（+→-, /→_, 無 URL 危險字元）
-    const jsonStr = JSON.stringify(report);
-    const base64 = btoa(unescape(encodeURIComponent(jsonStr)));
-    const base64url = base64.replace(/\+/g, '-').replace(/\//g, '_');
+    // base64url 編碼（TextEncoder，Unicode-safe）
+    const base64url = base64UrlEncode(JSON.stringify(report));
     const shareUrl = `${window.location.origin}/report?data=${base64url}`;
     try {
       navigator.clipboard.writeText(shareUrl);

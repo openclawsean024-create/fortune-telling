@@ -9,6 +9,18 @@ import LifePathDisplay from '@/components/LifePathDisplay';
 import ZodiacDisplay from '@/components/ZodiacDisplay';
 import TarotDisplay from '@/components/TarotDisplay';
 
+// Unicode-safe base64url decode（使用 TextDecoder，支援中文/亞洲字符）
+const base64UrlDecode = (str: string): string => {
+  const base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  const decoder = new TextDecoder('utf-8');
+  return decoder.decode(bytes);
+};
+
 type Tab = 'ziwu' | 'bazi' | 'tarot' | 'lifepath' | 'zodiac';
 
 function ReportContent() {
@@ -22,11 +34,10 @@ function ReportContent() {
   useEffect(() => {
     let found = false;
 
-    // base64url 解碼（cold-start 可靠，data 內嵌 URL）
+    // base64url 解碼（TextDecoder，Unicode-safe，cold-start 可靠）
     if (dataParam) {
       try {
-        const base64 = dataParam.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonStr = decodeURIComponent(escape(atob(base64)));
+        const jsonStr = base64UrlDecode(dataParam);
         const parsed = JSON.parse(jsonStr) as FortuneReport;
         setReport(parsed);
         found = true;
