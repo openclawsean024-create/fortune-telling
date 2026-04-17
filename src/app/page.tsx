@@ -81,7 +81,7 @@ export default function Home() {
     const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(report));
     const shareUrl = `${window.location.origin}/report?data=${compressed}`;
     await navigator.clipboard.writeText(shareUrl);
-    alert('分享連結已複製到剪貼簿！');
+    window.location.href = `/report?data=${compressed}`;
   };
 
   if (!report) {
