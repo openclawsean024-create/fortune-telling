@@ -22,10 +22,11 @@ function ReportContent() {
   useEffect(() => {
     let found = false;
 
-    // 優先讀取 ?data=<encodeURIComponent>（cold-start 可靠，data 內嵌 URL）
+    // base64url 解碼（cold-start 可靠，data 內嵌 URL）
     if (dataParam) {
       try {
-        const jsonStr = decodeURIComponent(dataParam);
+        const base64 = dataParam.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonStr = decodeURIComponent(escape(atob(base64)));
         const parsed = JSON.parse(jsonStr) as FortuneReport;
         setReport(parsed);
         found = true;

@@ -24,7 +24,7 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         alert(error.error || '生成失敗');
@@ -32,7 +32,7 @@ export default function Home() {
       }
 
       const result = await response.json();
-      
+
       if (!result.success || !result.report) {
         alert(result.error || '生成失敗');
         return;
@@ -40,7 +40,6 @@ export default function Home() {
 
       const reportData = result.report;
 
-      // 直接從 POST response 取得 report 並寫入 localStorage
       if (!reportData?.sharedId) {
         alert('分享功能暫時無法使用，請重新整理後再試');
         return;
@@ -70,12 +69,17 @@ export default function Home() {
       const card = result.card;
       setTarotCard(card);
 
-      // 回寫 localStorage，確保分享時 tarot 包含在內
-      if (report && card) {
-        const updatedReport = { ...report, tarot: card };
-        localStorage.setItem(`fortune_report_${report.sharedId}`, JSON.stringify(updatedReport));
-        localStorage.setItem(`fortune_report_${report.id}`, JSON.stringify(updatedReport));
-        setReport(updatedReport);
+      // tarot 寫入 report.tarot，確保分享時包含
+      if (card) {
+        setReport(prev => {
+          if (!prev) return prev;
+          const updated = { ...prev, tarot: card };
+          const idKey = prev.id || prev.sharedId;
+          const sharedKey = prev.sharedId || prev.id;
+          if (idKey) localStorage.setItem(`fortune_report_${idKey}`, JSON.stringify(updated));
+          if (sharedKey) localStorage.setItem(`fortune_report_${sharedKey}`, JSON.stringify(updated));
+          return updated;
+        });
       }
       return card;
     } catch (error) {
@@ -84,20 +88,23 @@ export default function Home() {
     }
   };
 
-  const handleShare = async () => {
+  const handleShare = () => {
     if (!report) {
       alert('報告尚未生成，請稍後再試');
       return;
     }
+    // base64url 編碼（+→-, /→_, 無 URL 危險字元）
+    const jsonStr = JSON.stringify(report);
+    const base64 = btoa(unescape(encodeURIComponent(jsonStr)));
+    const base64url = base64.replace(/\+/g, '-').replace(/\//g, '_');
+    const shareUrl = `${window.location.origin}/report?data=${base64url}`;
     try {
-      // 使用 encodeURIComponent（可靠、簡單，無需 base64 binary string）
-      const shareUrl = `${window.location.origin}/report?data=${encodeURIComponent(JSON.stringify(report))}`;
-      await navigator.clipboard.writeText(shareUrl);
+      navigator.clipboard.writeText(shareUrl);
       alert('分享連結已複製到剪貼簿！');
-    } catch (e) {
-      console.error('[Share] encode error:', e);
-      alert('分享失敗，請稍後再試');
+    } catch {
+      // clipboard 失敗仍執行 redirect
     }
+    window.location.href = shareUrl;
   };
 
   if (!report) {
@@ -130,7 +137,7 @@ export default function Home() {
                 {report.birthInfo.name || '命理報告'}
               </h2>
               <p className="text-gray-500">
-                {report.birthInfo.birthDate} {report.birthInfo.birthTime} · 
+                {report.birthInfo.birthDate} {report.birthInfo.birthTime} ·
                 {report.birthInfo.isLunar ? '農曆' : '國曆'}
               </p>
             </div>
