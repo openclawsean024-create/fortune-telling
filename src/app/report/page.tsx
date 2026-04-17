@@ -3,13 +3,13 @@
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 import { FortuneReport } from '@/types';
-import LZString from 'lz-string';
 import ZiwuChartDisplay from '@/components/ZiwuChart';
 import BaziChartDisplay from '@/components/BaziChart';
 import LifePathDisplay from '@/components/LifePathDisplay';
 import ZodiacDisplay from '@/components/ZodiacDisplay';
+import TarotDisplay from '@/components/TarotDisplay';
 
-type Tab = 'ziwu' | 'bazi' | 'lifepath' | 'zodiac';
+type Tab = 'ziwu' | 'bazi' | 'tarot' | 'lifepath' | 'zodiac';
 
 function ReportContent() {
   const searchParams = useSearchParams();
@@ -20,27 +20,33 @@ function ReportContent() {
   const [activeTab, setActiveTab] = useState<Tab>('ziwu');
 
   useEffect(() => {
+    let found = false;
+
+    // 優先讀取 ?data=<base64>（cold-start 可靠，data 內嵌 URL）
     if (dataParam) {
       try {
-        const decompressed = LZString.decompressFromEncodedURIComponent(dataParam);
-        if (decompressed && decompressed.length > 0) {
-          const parsed = JSON.parse(decompressed) as FortuneReport;
-          setReport(parsed);
-          setLoading(false);
-          return;
-        }
-      } catch { /* fall through */ }
+        const jsonStr = decodeURIComponent(escape(atob(dataParam)));
+        const parsed = JSON.parse(jsonStr) as FortuneReport;
+        setReport(parsed);
+        found = true;
+      } catch (e) {
+        console.error('[Report] ?data= decode error:', e);
+      }
     }
-    if (sharedId) {
+
+    // 回退：讀取 ?sharedId=（舊格式，仍支援）
+    if (!found && sharedId) {
       const stored = localStorage.getItem(`fortune_report_${sharedId}`);
       if (stored) {
         try {
           setReport(JSON.parse(stored));
-          setLoading(false);
-          return;
-        } catch { /* fall through */ }
+          found = true;
+        } catch {
+          console.error('[Report] ?sharedId= localStorage parse error');
+        }
       }
     }
+
     setLoading(false);
   }, [dataParam, sharedId]);
 
@@ -68,6 +74,7 @@ function ReportContent() {
   const tabs: { key: Tab; label: string }[] = [
     { key: 'ziwu', label: '紫微斗數' },
     { key: 'bazi', label: '八字命盤' },
+    { key: 'tarot', label: '塔羅占卜' },
     { key: 'lifepath', label: '生命靈數' },
     { key: 'zodiac', label: '生肖星座' },
   ];
@@ -105,6 +112,7 @@ function ReportContent() {
       <div className="space-y-6">
         {activeTab === 'ziwu' && report.ziwu && <ZiwuChartDisplay chart={report.ziwu} />}
         {activeTab === 'bazi' && report.bazi && <BaziChartDisplay chart={report.bazi} />}
+        {activeTab === 'tarot' && report.tarot && <TarotDisplay card={report.tarot} />}
         {activeTab === 'lifepath' && report.lifePath && <LifePathDisplay result={report.lifePath} />}
         {activeTab === 'zodiac' && report.zodiac && <ZodiacDisplay result={report.zodiac} />}
       </div>

@@ -9,7 +9,6 @@ import LifePathDisplay from '@/components/LifePathDisplay';
 import ZodiacDisplay from '@/components/ZodiacDisplay';
 import PDFExport from '@/components/PDFExport';
 import { FortuneReport, BirthInfo, TarotCard } from '@/types';
-import LZString from 'lz-string';
 
 type Tab = 'ziwu' | 'bazi' | 'tarot' | 'lifepath' | 'zodiac';
 
@@ -41,12 +40,13 @@ export default function Home() {
 
       const reportData = result.report;
 
-      // 直接從 POST response 取得 report 並寫入 localStorage（不再呼叫 GET API）
+      // 直接從 POST response 取得 report 並寫入 localStorage
+      if (!reportData?.sharedId) {
+        alert('分享功能暫時無法使用，請重新整理後再試');
+        return;
+      }
       localStorage.setItem(`fortune_report_${reportData.sharedId}`, JSON.stringify(reportData));
       localStorage.setItem(`fortune_report_${reportData.id}`, JSON.stringify(reportData));
-      // 保存壓縮分享 URL（跨瀏覽器可用，不受 server cold start 影響）
-      const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(reportData));
-      localStorage.setItem(`fortune_report_${reportData.sharedId}_url`, `${window.location.origin}/report?data=${compressed}`);
       const existing = JSON.parse(localStorage.getItem('fortune_reports') || '[]');
       if (!existing.includes(reportData.id)) {
         localStorage.setItem('fortune_reports', JSON.stringify([reportData.id, ...existing]));
@@ -67,8 +67,17 @@ export default function Home() {
         body: JSON.stringify({ seed: Date.now() }),
       });
       const result = await response.json();
-      setTarotCard(result.card);
-      setReport(prev => prev ? { ...prev, tarot: result.card } : prev);
+      const card = result.card;
+      setTarotCard(card);
+
+      // 回寫 localStorage，確保分享時 tarot 包含在內
+      if (report && card) {
+        const updatedReport = { ...report, tarot: card };
+        localStorage.setItem(`fortune_report_${report.sharedId}`, JSON.stringify(updatedReport));
+        localStorage.setItem(`fortune_report_${report.id}`, JSON.stringify(updatedReport));
+        setReport(updatedReport);
+      }
+      return card;
     } catch (error) {
       console.error('Tarot draw error:', error);
       return null;
@@ -76,11 +85,21 @@ export default function Home() {
   };
 
   const handleShare = async () => {
-    if (!report) return;
-    const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(report));
-    const shareUrl = `${window.location.origin}/report?data=${compressed}`;
-    try { await navigator.clipboard.writeText(shareUrl); } catch {}
-    window.location.href = shareUrl;
+    if (!report) {
+      alert('報告尚未生成，請稍後再試');
+      return;
+    }
+    // 使用 ?data=<base64> 格式，cold start 完全可靠（data 內嵌 URL）
+    try {
+      const jsonStr = JSON.stringify(report);
+      const base64 = btoa(unescape(encodeURIComponent(jsonStr)));
+      const shareUrl = `${window.location.origin}/report?data=${base64}`;
+      await navigator.clipboard.writeText(shareUrl);
+      alert('分享連結已複製到剪貼簿！');
+    } catch (e) {
+      console.error('[Share] encode error:', e);
+      alert('分享失敗，請稍後再試');
+    }
   };
 
   if (!report) {
