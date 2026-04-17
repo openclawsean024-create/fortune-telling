@@ -68,7 +68,7 @@ export default function Home() {
       });
       const result = await response.json();
       setTarotCard(result.card);
-      return result.card;
+      setReport(prev => prev ? { ...prev, tarot: result.card } : prev);
     } catch (error) {
       console.error('Tarot draw error:', error);
       return null;
