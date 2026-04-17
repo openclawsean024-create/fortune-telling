@@ -1,5 +1,3 @@
-'use client';
-
 import { NextRequest, NextResponse } from 'next/server';
 import { calculateZiwuChart, calculateBaziChart, calculateLifePath, calculateZodiac, isValidDate } from '@/lib/fortune';
 import { lunarToSolar, solarToLunar } from '@/lib/lunar';
