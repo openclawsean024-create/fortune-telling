@@ -3,6 +3,7 @@
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 import { FortuneReport } from '@/types';
+import LZString from 'lz-string';
 import ZiwuChartDisplay from '@/components/ZiwuChart';
 import BaziChartDisplay from '@/components/BaziChart';
 import LifePathDisplay from '@/components/LifePathDisplay';
@@ -12,28 +13,43 @@ type Tab = 'ziwu' | 'bazi' | 'lifepath' | 'zodiac';
 
 function ReportContent() {
   const searchParams = useSearchParams();
+  const dataParam = searchParams.get('data');
   const sharedId = searchParams.get('sharedId');
   const [report, setReport] = useState<FortuneReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>('ziwu');
 
   useEffect(() => {
-    if (!sharedId) {
-      setLoading(false);
-      return;
-    }
+    let loaded = false;
 
-    // 從 localStorage 讀取（持久化，解決 serverless cold start 問題）
-    const stored = localStorage.getItem(`fortune_report_${sharedId}`);
-    if (stored) {
+    // Priority 1: ?data= — lz-string URL-encoded full report (cross-browser, cold-start safe)
+    if (dataParam) {
       try {
-        setReport(JSON.parse(stored));
+        const decompressed = LZString.decompressFromEncodedURIComponent(dataParam);
+        if (decompressed) {
+          const parsed = JSON.parse(decompressed) as FortuneReport;
+          setReport(parsed);
+          loaded = true;
+        }
       } catch {
-        setReport(null);
+        // invalid data — try next source
       }
     }
+    // Priority 2: ?sharedId= — localStorage (same browser that generated report)
+    if (!loaded && sharedId) {
+      const stored = localStorage.getItem(`fortune_report_${sharedId}`);
+      if (stored) {
+        try {
+          setReport(JSON.parse(stored));
+          loaded = true;
+        } catch {
+          // invalid
+        }
+      }
+    }
+
     setLoading(false);
-  }, [sharedId]);
+  }, [dataParam, sharedId]);
 
   if (loading) {
     return (
@@ -45,7 +61,7 @@ function ReportContent() {
     return (
       <div className="text-center py-16">
         <p className="text-xl text-red-500 mb-6">找不到報告，請重新生成</p>
-        <p className="text-gray-500 mb-6">分享連結僅在同瀏覽器的有效期限內有效</p>
+        <p className="text-gray-500 mb-6">分享連結已過期，請重新從首頁生成報告</p>
         <a
           href="/"
           className="inline-block py-3 px-6 bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all"

@@ -9,6 +9,7 @@ import LifePathDisplay from '@/components/LifePathDisplay';
 import ZodiacDisplay from '@/components/ZodiacDisplay';
 import PDFExport from '@/components/PDFExport';
 import { FortuneReport, BirthInfo, TarotCard } from '@/types';
+import LZString from 'lz-string';
 
 type Tab = 'ziwu' | 'bazi' | 'tarot' | 'lifepath' | 'zodiac';
 
@@ -43,6 +44,9 @@ export default function Home() {
       // 直接從 POST response 取得 report 並寫入 localStorage（不再呼叫 GET API）
       localStorage.setItem(`fortune_report_${reportData.sharedId}`, JSON.stringify(reportData));
       localStorage.setItem(`fortune_report_${reportData.id}`, JSON.stringify(reportData));
+      // 保存壓縮分享 URL（跨瀏覽器可用，不受 server cold start 影響）
+      const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(reportData));
+      localStorage.setItem(`fortune_report_${reportData.sharedId}_url`, `${window.location.origin}/report?data=${compressed}`);
       const existing = JSON.parse(localStorage.getItem('fortune_reports') || '[]');
       if (!existing.includes(reportData.id)) {
         localStorage.setItem('fortune_reports', JSON.stringify([reportData.id, ...existing]));
@@ -73,7 +77,9 @@ export default function Home() {
 
   const handleShare = async () => {
     if (!report) return;
-    const shareUrl = `${window.location.origin}/report?sharedId=${report.sharedId}`;
+    // 將完整報告以 lz-string 壓縮後存入 URL 參數，跨瀏覽器可用，不受 server cold start 影響
+    const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(report));
+    const shareUrl = `${window.location.origin}/report?data=${compressed}`;
     await navigator.clipboard.writeText(shareUrl);
     alert('分享連結已複製到剪貼簿！');
   };
