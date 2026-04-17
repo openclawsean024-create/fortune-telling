@@ -3,10 +3,8 @@ import { calculateZiwuChart, calculateBaziChart, calculateLifePath, calculateZod
 import { lunarToSolar, solarToLunar } from '@/lib/lunar';
 import { nanoid } from 'nanoid';
 
-// In-memory store retained for runtime lookups (sharedId → report data)
-// Full report data is persisted by client in localStorage; this cache only
-// survives within a warm serverless instance.
-const reportCache = new Map<string, any>();
+// In-memory store (per-instance, reset on cold start)
+const reportStore = new Map<string, any>();
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,38 +38,22 @@ export async function POST(request: NextRequest) {
       sharedId: nanoid(10),
     };
 
-    reportCache.set(report.id, report);
-    reportCache.set(report.sharedId, report);
+    // 只保留於 memory（退場，不再依賴 server 持久化分享報告）
+    // client 端會在收到 response 後直接 localStorage 持久化
+    reportStore.set(report.id, report);
+    reportStore.set(report.sharedId, report);
 
-    return NextResponse.json({ success: true, reportId: report.id, sharedId: report.sharedId, birthInfo: report.birthInfo });
+    return NextResponse.json({ success: true, reportId: report.id, sharedId: report.sharedId, report });
   } catch (error) {
     console.error('Fortune generation error:', error);
     return NextResponse.json({ error: '生成失敗' }, { status: 500 });
   }
 }
 
+// GET 已停用分享功能（serverless cold start 不穩定）
+// 分享報告現在完全由 client-side localStorage 持久化
+// 見：src/app/page.tsx（生成時直接 localStorage.setItem）
+// 見：src/app/report/page.tsx（讀取時直接 localStorage.getItem）
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const reportId = searchParams.get('id');
-  const sharedId = searchParams.get('sharedId');
-
-  if (reportId) {
-    const report = reportCache.get(reportId);
-    if (!report) {
-      // Warm instance cache miss → client must read from localStorage
-      return NextResponse.json({ error: '報告已過期，請重新生成' }, { status: 404 });
-    }
-    return NextResponse.json(report);
-  }
-
-  if (sharedId) {
-    const report = reportCache.get(sharedId);
-    if (!report) {
-      // Warm instance cache miss → client must read from localStorage
-      return NextResponse.json({ error: '分享的報告已過期，請重新生成' }, { status: 404 });
-    }
-    return NextResponse.json(report);
-  }
-
-  return NextResponse.json({ error: '需要提供 id 或 sharedId' }, { status: 400 });
+  return NextResponse.json({ error: '分享功能已改為 localStorage，請從首頁重新生成報告' }, { status: 410 });
 }

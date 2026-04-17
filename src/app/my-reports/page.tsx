@@ -59,38 +59,18 @@ export default function MyReportsPage() {
     }
 
     reportIds.forEach((id) => {
-      // 優先從 localStorage 讀取
+      // 完全從 localStorage 讀取（serverless cold start 不穩定，已停用 API fallback）
       const stored = localStorage.getItem(`fortune_report_${id}`);
       if (stored) {
         try {
           loaded.push(JSON.parse(stored));
         } catch {}
-        completed++;
-        if (completed === reportIds.length) {
-          setReports(loaded.filter(Boolean));
-          setLoading(false);
-        }
-        return;
       }
-
-      fetch(`/api/fortune?id=${id}`)
-        .then(res => res.json())
-        .then(data => {
-          if (!data.error) {
-            loaded.push(data);
-            // 回寫 localStorage
-            localStorage.setItem(`fortune_report_${data.sharedId}`, JSON.stringify(data));
-            localStorage.setItem(`fortune_report_${data.id}`, JSON.stringify(data));
-          }
-        })
-        .catch(() => {})
-        .finally(() => {
-          completed++;
-          if (completed === reportIds.length) {
-            setReports(loaded.filter(Boolean));
-            setLoading(false);
-          }
-        });
+      completed++;
+      if (completed === reportIds.length) {
+        setReports(loaded.filter(Boolean));
+        setLoading(false);
+      }
     });
 
     if (reportIds.length === 0) setLoading(false);

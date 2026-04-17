@@ -23,30 +23,16 @@ function ReportContent() {
       return;
     }
 
-    // 優先從 localStorage 讀取（持久化，解決 serverless cold start 問題）
+    // 從 localStorage 讀取（持久化，解決 serverless cold start 問題）
     const stored = localStorage.getItem(`fortune_report_${sharedId}`);
     if (stored) {
       try {
         setReport(JSON.parse(stored));
-        setLoading(false);
-        return;
       } catch {
-        // fall through to API
+        setReport(null);
       }
     }
-
-    // fallback: 嘗試從 API 讀取
-    fetch(`/api/fortune?sharedId=${sharedId}`)
-      .then(res => res.json())
-      .then(data => {
-        if (!data.error) {
-          setReport(data);
-          // 同步寫入 localStorage
-          localStorage.setItem(`fortune_report_${sharedId}`, JSON.stringify(data));
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    setLoading(false);
   }, [sharedId]);
 
   if (loading) {
@@ -57,7 +43,16 @@ function ReportContent() {
 
   if (!report) {
     return (
-      <div className="text-xl text-red-500">找不到報告，請重新生成</div>
+      <div className="text-center py-16">
+        <p className="text-xl text-red-500 mb-6">找不到報告，請重新生成</p>
+        <p className="text-gray-500 mb-6">分享連結僅在同瀏覽器的有效期限內有效</p>
+        <a
+          href="/"
+          className="inline-block py-3 px-6 bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all"
+        >
+          回到首頁
+        </a>
+      </div>
     );
   }
 

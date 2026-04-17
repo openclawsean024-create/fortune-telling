@@ -32,17 +32,20 @@ export default function Home() {
       }
 
       const result = await response.json();
-      const reportResponse = await fetch(`/api/fortune?id=${result.reportId}`);
-      const reportData = await reportResponse.json();
+      
+      if (!result.success || !result.report) {
+        alert(result.error || '生成失敗');
+        return;
+      }
 
-      // 保存報告到 localStorage（sharedId 持久化，解決 serverless cold start 問題）
-      if (reportData.sharedId) {
-        localStorage.setItem(`fortune_report_${reportData.sharedId}`, JSON.stringify(reportData));
-        localStorage.setItem(`fortune_report_${reportData.id}`, JSON.stringify(reportData));
-        const existing = JSON.parse(localStorage.getItem('fortune_reports') || '[]');
-        if (!existing.includes(reportData.id)) {
-          localStorage.setItem('fortune_reports', JSON.stringify([reportData.id, ...existing]));
-        }
+      const reportData = result.report;
+
+      // 直接從 POST response 取得 report 並寫入 localStorage（不再呼叫 GET API）
+      localStorage.setItem(`fortune_report_${reportData.sharedId}`, JSON.stringify(reportData));
+      localStorage.setItem(`fortune_report_${reportData.id}`, JSON.stringify(reportData));
+      const existing = JSON.parse(localStorage.getItem('fortune_reports') || '[]');
+      if (!existing.includes(reportData.id)) {
+        localStorage.setItem('fortune_reports', JSON.stringify([reportData.id, ...existing]));
       }
 
       setReport(reportData);
