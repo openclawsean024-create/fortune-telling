@@ -218,14 +218,18 @@ export function isValidDate(dateStr: string, timeStr: string): boolean {
     const regex = /^\d{4}-\d{2}-\d{2}$/;
     if (!regex.test(dateStr)) return false;
     
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return false;
+    const [year, month, day] = dateStr.split('-').map(Number);
     
-    // 檢查日期範圍
-    const year = date.getFullYear();
+    // Check valid calendar date
+    const d = new Date(year, month - 1, day);
+    if (d.getFullYear() !== year || d.getMonth() !== month - 1 || d.getDate() !== day) {
+      return false;
+    }
+    
+    // Check date range
     if (year < 1900 || year > 2100) return false;
     
-    // 檢查時間格式
+    // Check time format
     const timeRegex = /^\d{2}:\d{2}$/;
     if (!timeRegex.test(timeStr)) return false;
     
