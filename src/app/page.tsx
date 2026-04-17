@@ -1,65 +1,143 @@
-import Image from "next/image";
+'use client';
+
+import { useState } from 'react';
+import FortuneForm from '@/components/FortuneForm';
+import ZiwuChartDisplay from '@/components/ZiwuChart';
+import BaziChartDisplay from '@/components/BaziChart';
+import TarotDraw from '@/components/TarotDraw';
+import LifePathDisplay from '@/components/LifePathDisplay';
+import ZodiacDisplay from '@/components/ZodiacDisplay';
+import PDFExport from '@/components/PDFExport';
+import { FortuneReport, BirthInfo, TarotCard } from '@/types';
+
+type Tab = 'ziwu' | 'bazi' | 'tarot' | 'lifepath' | 'zodiac';
 
 export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+  const [report, setReport] = useState<FortuneReport | null>(null);
+  const [activeTab, setActiveTab] = useState<Tab>('ziwu');
+  const [tarotCard, setTarotCard] = useState<TarotCard | null>(null);
+
+  const handleSubmit = async (data: BirthInfo) => {
+    try {
+      const response = await fetch('/api/fortune', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        alert(error.error || '生成失敗');
+        return;
+      }
+
+      const result = await response.json();
+      const reportResponse = await fetch(`/api/fortune?id=${result.reportId}`);
+      const reportData = await reportResponse.json();
+      setReport(reportData);
+    } catch (error) {
+      console.error('Error:', error);
+      alert('發生錯誤，請稍後再試');
+    }
+  };
+
+  const handleDrawTarot = async () => {
+    try {
+      const response = await fetch('/api/tarot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ seed: Date.now() }),
+      });
+      const result = await response.json();
+      setTarotCard(result.card);
+      return result.card;
+    } catch (error) {
+      console.error('Tarot draw error:', error);
+      return null;
+    }
+  };
+
+  const handleShare = async () => {
+    if (!report) return;
+    const shareUrl = `${window.location.origin}/report?sharedId=${report.sharedId}`;
+    await navigator.clipboard.writeText(shareUrl);
+    alert('分享連結已複製到剪貼簿！');
+  };
+
+  if (!report) {
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-purple-600 via-indigo-700 to-blue-800 py-12">
+        <div className="max-w-4xl mx-auto px-4">
+          <h1 className="text-4xl font-bold text-white text-center mb-2">全方位的命理分析</h1>
+          <p className="text-purple-200 text-center mb-8">紫微斗數 · 八字命盤 · 塔羅占卜 · 生命靈數 · 生肖星座</p>
+          <FortuneForm onSubmit={handleSubmit} />
         </div>
       </main>
-    </div>
+    );
+  }
+
+  const tabs: { key: Tab; label: string }[] = [
+    { key: 'ziwu', label: '紫微斗數' },
+    { key: 'bazi', label: '八字命盤' },
+    { key: 'tarot', label: '塔羅占卜' },
+    { key: 'lifepath', label: '生命靈數' },
+    { key: 'zodiac', label: '生肖星座' },
+  ];
+
+  return (
+    <main className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-6xl mx-auto px-4">
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800">
+                {report.birthInfo.name || '命理報告'}
+              </h2>
+              <p className="text-gray-500">
+                {report.birthInfo.birthDate} {report.birthInfo.birthTime} · 
+                {report.birthInfo.isLunar ? '農曆' : '國曆'}
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={handleShare}
+                className="py-2 px-4 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 transition-all"
+              >
+                🔗 分享
+              </button>
+              <PDFExport report={report} />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-lg mb-6">
+          <div className="flex border-b overflow-x-auto">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-6 py-4 font-medium whitespace-nowrap transition-all ${
+                  activeTab === tab.key
+                    ? 'text-purple-600 border-b-2 border-purple-600'
+                    : 'text-gray-500 hover:text-purple-500'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          {activeTab === 'ziwu' && report.ziwu && <ZiwuChartDisplay chart={report.ziwu} />}
+          {activeTab === 'bazi' && report.bazi && <BaziChartDisplay chart={report.bazi} />}
+          {activeTab === 'tarot' && (
+            <TarotDraw onDraw={handleDrawTarot} />
+          )}
+          {activeTab === 'lifepath' && report.lifePath && <LifePathDisplay result={report.lifePath} />}
+          {activeTab === 'zodiac' && report.zodiac && <ZodiacDisplay result={report.zodiac} />}
+        </div>
+      </div>
+    </main>
   );
 }
