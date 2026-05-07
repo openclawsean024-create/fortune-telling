@@ -9,7 +9,6 @@ import BaziChartDisplay from '@/components/BaziChart';
 import LifePathDisplay from '@/components/LifePathDisplay';
 import ZodiacDisplay from '@/components/ZodiacDisplay';
 import TarotDisplay from '@/components/TarotDisplay';
-
 // PDFExport uses @react-pdf/renderer which requires browser APIs.
 // Use next/dynamic with ssr:false so this component is never loaded server-side.
 const PDFExport = dynamic(() => import('@/components/PDFExport'), {
@@ -106,14 +105,16 @@ function ReportContent() {
   return (
     <>
       <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">
-          {report.birthInfo.name || '命理報告'}
-        </h2>
-        <p className="text-gray-500">
-          {report.birthInfo.birthDate} {report.birthInfo.birthTime}
-        </p>
-        <p className="text-sm text-purple-600 mt-2">✨ 分享報告</p>
-        <div className="mt-3 flex gap-2">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">
+              {report.birthInfo.name || '命理報告'}
+            </h2>
+            <p className="text-gray-500">
+              {report.birthInfo.birthDate} {report.birthInfo.birthTime}
+            </p>
+            <p className="text-sm text-purple-600 mt-2">✨ 分享報告</p>
+          </div>
           <PDFExport report={report} />
         </div>
       </div>
