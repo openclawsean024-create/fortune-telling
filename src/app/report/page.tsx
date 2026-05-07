@@ -2,13 +2,24 @@
 
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { FortuneReport } from '@/types';
 import ZiwuChartDisplay from '@/components/ZiwuChart';
 import BaziChartDisplay from '@/components/BaziChart';
 import LifePathDisplay from '@/components/LifePathDisplay';
 import ZodiacDisplay from '@/components/ZodiacDisplay';
 import TarotDisplay from '@/components/TarotDisplay';
-import PDFExport from '@/components/PDFExport';
+
+// PDFExport uses @react-pdf/renderer which requires browser APIs.
+// Use next/dynamic with ssr:false so this component is never loaded server-side.
+const PDFExport = dynamic(() => import('@/components/PDFExport'), {
+  ssr: false,
+  loading: () => (
+    <span className="inline-flex items-center gap-2 py-2 px-4 bg-gray-200 text-gray-500 rounded-lg">
+      📄 載入中...
+    </span>
+  ),
+});
 
 // Unicode-safe base64url decode（使用 TextDecoder，支援中文/亞洲字符）
 const base64UrlDecode = (str: string): string => {
