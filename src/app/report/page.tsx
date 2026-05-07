@@ -8,6 +8,7 @@ import BaziChartDisplay from '@/components/BaziChart';
 import LifePathDisplay from '@/components/LifePathDisplay';
 import ZodiacDisplay from '@/components/ZodiacDisplay';
 import TarotDisplay from '@/components/TarotDisplay';
+import PDFExport from '@/components/PDFExport';
 
 // Unicode-safe base64url decode（使用 TextDecoder，支援中文/亞洲字符）
 const base64UrlDecode = (str: string): string => {
@@ -101,6 +102,9 @@ function ReportContent() {
           {report.birthInfo.birthDate} {report.birthInfo.birthTime}
         </p>
         <p className="text-sm text-purple-600 mt-2">✨ 分享報告</p>
+        <div className="mt-3 flex gap-2">
+          <PDFExport report={report} />
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-lg mb-6">
