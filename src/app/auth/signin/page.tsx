@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
+import Link from 'next/link';
 
 export default function SignInPage() {
   const [email, setEmail] = useState('');
@@ -91,9 +92,9 @@ export default function SignInPage() {
         </div>
 
         <div className="mt-4 text-center">
-          <a href="/" className="text-sm text-gray-500 hover:text-purple-600 transition-colors">
+          <Link href="/" className="text-sm text-gray-500 hover:text-purple-600 transition-colors">
             ← 先不登入，直接使用
-          </a>
+          </Link>
         </div>
       </div>
     </main>

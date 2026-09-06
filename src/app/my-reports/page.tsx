@@ -26,6 +26,7 @@ function getLocalReports(): string[] {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function saveReportId(reportId: string) {
   if (typeof window === 'undefined') return;
   const ids = getLocalReports();
@@ -46,15 +47,16 @@ export default function MyReportsPage() {
       router.push('/auth/signin');
       return;
     }
-    setUserEmail(email);
 
     // 從 localStorage 讀取報告（持久化存儲）
     const reportIds = getLocalReports();
     const loaded: Report[] = [];
-    let completed = 0;
 
     if (reportIds.length === 0) {
-      setLoading(false);
+      queueMicrotask(() => {
+        setUserEmail(email);
+        setLoading(false);
+      });
       return;
     }
 
@@ -66,14 +68,14 @@ export default function MyReportsPage() {
           loaded.push(JSON.parse(stored));
         } catch {}
       }
-      completed++;
-      if (completed === reportIds.length) {
-        setReports(loaded.filter(Boolean));
-        setLoading(false);
-      }
     });
 
-    if (reportIds.length === 0) setLoading(false);
+    // Defer setState out of effect body to avoid cascading-render warning
+    queueMicrotask(() => {
+      setUserEmail(email);
+      setReports(loaded.filter(Boolean));
+      setLoading(false);
+    });
   }, [router]);
 
   const handleLogout = () => {

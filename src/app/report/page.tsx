@@ -3,6 +3,7 @@
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { FortuneReport } from '@/types';
 import ZiwuChartDisplay from '@/components/ZiwuChart';
 import BaziChartDisplay from '@/components/BaziChart';
@@ -44,13 +45,13 @@ function ReportContent() {
 
   useEffect(() => {
     let found = false;
+    let decoded: FortuneReport | null = null;
 
     // base64url 解碼（TextDecoder，Unicode-safe，cold-start 可靠）
     if (dataParam) {
       try {
         const jsonStr = base64UrlDecode(dataParam);
-        const parsed = JSON.parse(jsonStr) as FortuneReport;
-        setReport(parsed);
+        decoded = JSON.parse(jsonStr) as FortuneReport;
         found = true;
       } catch (e) {
         console.error('[Report] ?data= decode error:', e);
@@ -62,7 +63,7 @@ function ReportContent() {
       const stored = localStorage.getItem(`fortune_report_${sharedId}`);
       if (stored) {
         try {
-          setReport(JSON.parse(stored));
+          decoded = JSON.parse(stored) as FortuneReport;
           found = true;
         } catch {
           console.error('[Report] ?sharedId= localStorage parse error');
@@ -70,7 +71,11 @@ function ReportContent() {
       }
     }
 
-    setLoading(false);
+    // Defer setState out of the effect body to avoid cascading-render warning
+    queueMicrotask(() => {
+      if (decoded) setReport(decoded);
+      setLoading(false);
+    });
   }, [dataParam, sharedId]);
 
   if (loading) {
@@ -84,12 +89,12 @@ function ReportContent() {
       <div className="text-center py-16">
         <p className="text-xl text-red-500 mb-6">找不到報告，請重新生成</p>
         <p className="text-gray-500 mb-6">分享連結已過期，請重新從首頁生成報告</p>
-        <a
+        <Link
           href="/"
           className="inline-block py-3 px-6 bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all"
         >
           回到首頁
-        </a>
+        </Link>
       </div>
     );
   }

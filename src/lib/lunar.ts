@@ -98,6 +98,7 @@ export function solarToLunar(date: Date): { year: number; month: number; day: nu
   return { year, month, day: offset + 1, isLeap };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function isValidLunarDate(year: number, month: number, day: number, isLeap: boolean): boolean {
   if (month < 1 || month > 12) return false;
   const maxDay = getLunarYearDays(year);

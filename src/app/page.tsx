@@ -21,6 +21,8 @@ const base64UrlEncode = (str: string): string => {
 };
 
 // Unicode-safe base64url decode（使用 TextDecoder，支援中文/亞洲字符）
+// Reserved for future shared-link decode flow (current report page handles decode).
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const base64UrlDecode = (str: string): string => {
   const base64 = str.replace(/-/g, '+').replace(/_/g, '/');
   const binary = atob(base64);
@@ -37,6 +39,7 @@ type Tab = 'ziwu' | 'bazi' | 'tarot' | 'lifepath' | 'zodiac';
 export default function Home() {
   const [report, setReport] = useState<FortuneReport | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('ziwu');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [tarotCard, setTarotCard] = useState<TarotCard | null>(null);
 
   const handleSubmit = async (data: BirthInfo) => {

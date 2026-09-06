@@ -42,7 +42,9 @@ export function calculateZiwuChart(birthDate: Date, birthTime: string): ZiwuChar
 // ============ 八字命盤 ============
 const HEAVEN_STEMS = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
 const EARTH_BRANCHES = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ELEMENTS = ['木', '火', '土', '金', '水'];
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const MONTH_BRANCHES = ['寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥', '子', '丑'];
 
 function getStemIndex(year: number): number {
@@ -72,6 +74,7 @@ function getDayStemAndBranch(jd: number): { stem: number; branch: number } {
 export function calculateBaziChart(birthDate: Date, birthTime: string): BaziChart {
   const year = birthDate.getFullYear();
   const month = birthDate.getMonth() + 1;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const day = birthDate.getDate();
   const hour = parseInt(birthTime.split(':')[0]);
 
@@ -232,10 +235,12 @@ export function isValidDate(dateStr: string, timeStr: string): boolean {
     // Check time format
     const timeRegex = /^\d{2}:\d{2}$/;
     if (!timeRegex.test(timeStr)) return false;
-    
-    const hour = parseInt(timeStr.split(':')[0]);
-    if (hour < 0 || hour > 23) return false;
-    
+
+    const [hourStr, minuteStr] = timeStr.split(':');
+    const hour = parseInt(hourStr);
+    const minute = parseInt(minuteStr);
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return false;
+
     return true;
   } catch {
     return false;

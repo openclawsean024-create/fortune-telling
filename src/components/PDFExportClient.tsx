@@ -2,6 +2,7 @@
 
 import { Document, Page, Text, View, StyleSheet, PDFDownloadLink, Font } from '@react-pdf/renderer';
 import React from 'react';
+import type { FortuneReport } from '@/types';
 
 // Register Chinese font via CDN (bypasses Vercel 4.5MB static file limit)
 Font.register({
@@ -39,7 +40,7 @@ const s = StyleSheet.create({
   footer: { fontSize: 8, color: '#9ca3af', textAlign: 'center', marginTop: 16 },
 });
 
-function CoverPage({ report }: { report: any }) {
+function CoverPage({ report }: { report: FortuneReport }) {
   return (
     <Page size="A4" style={s.page}>
       <Text style={s.header}>全方位命理分析報告</Text>
@@ -85,7 +86,7 @@ function CoverPage({ report }: { report: any }) {
   );
 }
 
-function ZiwuPage({ report }: { report: any }) {
+function ZiwuPage({ report }: { report: FortuneReport }) {
   if (!report.ziwu) return null;
   const entries = Object.entries(report.ziwu);
   const mid = Math.ceil(entries.length / 2);
@@ -115,7 +116,7 @@ function ZiwuPage({ report }: { report: any }) {
   );
 }
 
-function BaziPage({ report }: { report: any }) {
+function BaziPage({ report }: { report: FortuneReport }) {
   if (!report.bazi) return null;
   return (
     <Page size="A4" style={s.page}>
@@ -143,17 +144,17 @@ function BaziPage({ report }: { report: any }) {
   );
 }
 
-function TarotPage({ report }: { report: any }) {
+function TarotPage({ report }: { report: FortuneReport }) {
   if (!report.tarot) return null;
   return (
     <Page size="A4" style={s.page}>
       <Text style={s.header}>塔羅占卜</Text>
       <View style={s.section}>
         {[
-          { label: '牌名', value: report.tarot.card },
-          { label: '正逆位', value: report.tarot.position },
+          { label: '牌名', value: report.tarot.name },
+          { label: '英文', value: report.tarot.nameEn },
+          { label: '正逆位', value: report.tarot.reversed ? '逆位' : '正位' },
           { label: '牌面含義', value: report.tarot.meaning },
-          { label: '占卜解讀', value: report.tarot.description },
         ].map(({ label, value }) => (
           <View key={label} style={s.card}>
             <Text style={s.boldLabel}>{label}</Text>
@@ -166,7 +167,7 @@ function TarotPage({ report }: { report: any }) {
   );
 }
 
-function LifePathPage({ report }: { report: any }) {
+function LifePathPage({ report }: { report: FortuneReport }) {
   if (!report.lifePath) return null;
   return (
     <Page size="A4" style={s.page}>
@@ -187,7 +188,7 @@ function LifePathPage({ report }: { report: any }) {
   );
 }
 
-function ZodiacPage({ report }: { report: any }) {
+function ZodiacPage({ report }: { report: FortuneReport }) {
   if (!report.zodiac) return null;
   return (
     <Page size="A4" style={s.page}>
@@ -201,7 +202,7 @@ function ZodiacPage({ report }: { report: any }) {
         </View>
         <View style={s.card}><Text style={s.boldLabel}>運勢描述</Text><Text style={s.text}>{report.zodiac.description}</Text></View>
         <View style={s.card}><Text style={s.boldLabel}>幸運數字</Text><Text style={s.text}>{report.zodiac.luckyNumbers?.join(', ')}</Text></View>
-        {report.zodiac.compatibleSigns && <View style={s.card}><Text style={s.boldLabel}>相配星座</Text><Text style={s.text}>{report.zodiac.compatibleSigns}</Text></View>}
+        {report.zodiac.compatibleWith && <View style={s.card}><Text style={s.boldLabel}>相配星座</Text><Text style={s.text}>{report.zodiac.compatibleWith.join(', ')}</Text></View>}
       </View>
       <Text style={s.footer}>此報告由全方位算命網站 AI 自動生成 · 僅供參考</Text>
       <Text style={s.pageNumber}>6</Text>
@@ -209,7 +210,7 @@ function ZodiacPage({ report }: { report: any }) {
   );
 }
 
-function FortunePDF({ report }: { report: any }) {
+function FortunePDF({ report }: { report: FortuneReport }) {
   return (
     <Document>
       <CoverPage report={report} />
@@ -223,7 +224,7 @@ function FortunePDF({ report }: { report: any }) {
 }
 
 // Export a function that returns the button React element
-export default function PDFExportClient(report: any) {
+export default function PDFExportClient(report: FortuneReport) {
   return (
     <PDFDownloadLink
       document={<FortunePDF report={report} />}

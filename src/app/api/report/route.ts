@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import type { FortuneReport } from '@/types';
 
 // 簡單的本地儲存（生產環境應用 PostgreSQL/Supabase）
-const reports = new Map<string, any>();
+const reports = new Map<string, FortuneReport>();
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: '保存失敗' }, { status: 500 });
   }
 }

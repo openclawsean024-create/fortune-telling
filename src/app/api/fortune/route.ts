@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { calculateZiwuChart, calculateBaziChart, calculateLifePath, calculateZodiac, isValidDate } from '@/lib/fortune';
 import { lunarToSolar, solarToLunar } from '@/lib/lunar';
 import { nanoid } from 'nanoid';
+import type { FortuneReport } from '@/types';
 
 // In-memory store (per-instance, reset on cold start)
-const reportStore = new Map<string, any>();
+const reportStore = new Map<string, FortuneReport>();
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,12 +27,11 @@ export async function POST(request: NextRequest) {
       solarDate = converted;
     }
 
-    const report = {
+    const report: FortuneReport = {
       id: nanoid(),
       birthInfo: { name, birthDate, birthTime, gender, isLunar },
       ziwu: calculateZiwuChart(solarDate, birthTime),
       bazi: calculateBaziChart(solarDate, birthTime),
-      tarot: null,
       lifePath: calculateLifePath(solarDate),
       zodiac: calculateZodiac(solarDate),
       createdAt: new Date().toISOString(),
@@ -41,7 +41,9 @@ export async function POST(request: NextRequest) {
     // 只保留於 memory（退場，不再依賴 server 持久化分享報告）
     // client 端會在收到 response 後直接 localStorage 持久化
     reportStore.set(report.id, report);
-    reportStore.set(report.sharedId, report);
+    if (report.sharedId) {
+      reportStore.set(report.sharedId, report);
+    }
 
     return NextResponse.json({ success: true, reportId: report.id, sharedId: report.sharedId, report });
   } catch (error) {
@@ -54,6 +56,7 @@ export async function POST(request: NextRequest) {
 // 分享報告現在完全由 client-side localStorage 持久化
 // 見：src/app/page.tsx（生成時直接 localStorage.setItem）
 // 見：src/app/report/page.tsx（讀取時直接 localStorage.getItem）
-export async function GET(request: NextRequest) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function GET(_request: NextRequest) {
   return NextResponse.json({ error: '分享功能已改為 localStorage，請從首頁重新生成報告' }, { status: 410 });
 }
